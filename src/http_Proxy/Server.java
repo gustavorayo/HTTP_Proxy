@@ -16,7 +16,7 @@ public class Server {
 	int cont=0;
 	
 	public void start(){
-		ExecutorService executor=Executors.newFixedThreadPool(100);
+		ExecutorService executor=Executors.newFixedThreadPool(200);
 		try {
 			ServerSocket socket=new ServerSocket(PORT);
 			while(true){
