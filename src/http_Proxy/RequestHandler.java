@@ -18,7 +18,6 @@ public class RequestHandler implements Runnable {
     Socket clientSocket;
     Socket serverSocket;
 
-    int id;
     InputStream inFromClient;
     DataOutputStream outToClient;
     InputStream inFromServer;
@@ -32,9 +31,8 @@ public class RequestHandler implements Runnable {
     final String METHOD="GET";
     final int NOTMODIFIED=304;
     
-    public RequestHandler(Socket c, int id) {
+    public RequestHandler(Socket c) {
         this.clientSocket = c;
-        this.id = id;
     }
 
     @Override
@@ -44,9 +42,10 @@ public class RequestHandler implements Runnable {
             inFromClient = clientSocket.getInputStream();              
             String clientRequest=ReadFromClient();
             String method=getMethod(clientRequest);
-            URL url = getURL(clientRequest);
+            
             
             if (method.equals(METHOD)) {
+                URL url = getURL(clientRequest);
                 String requestToServer = METHOD +SPACE+url.getPath()+SPACE+PROTOCOL+"\r\n\r\n";
                 serverSocket = new Socket(url.getHost(), 80);
                 
@@ -54,26 +53,30 @@ public class RequestHandler implements Runnable {
                 inFromServer = serverSocket.getInputStream();
                 
                 if (cache.hasValue(url.toString())) {
+                    System.out.println("Request in chahe");
                     String date= getDate(new String(cache.getValue(url.toString()))) ;
                     
                     String condicionalRequest="";
-                    
                     condicionalRequest+=METHOD +SPACE+url.getPath()+SPACE+PROTOCOL+"\r\n";
                     condicionalRequest+="If-Modified-Since: "+date+"\r\n";
                     condicionalRequest+="\r\n\r\n";
+                    
                     writeToServer(condicionalRequest);
                     ByteArrayOutputStream aBOS=ReadFromServer();
                     
                     String serResponse="";
-                    int length=-1;
+                    int length;
                     
                     if(isModified(aBOS.toString())){
+                        
                         writeToClient(aBOS.toByteArray());
                         cache.update(url.toString(), aBOS.toByteArray());
                         serResponse=aBOS.toString();
                         length=getLength(serResponse);
-                        
+                        System.out.println("Date in Cache:"+date+"\t Date in Server "+getDate(serResponse));
+                        System.out.println("File modified after:"+date);
                     }else{
+                        System.out.println("File Not Modified");
                         writeToClient(cache.getValue(url.toString()));
                         serResponse=cache.getValue(url.toString()).toString();
                         length=getLength(serResponse);
@@ -92,6 +95,7 @@ public class RequestHandler implements Runnable {
             } else {
                 String methodNotSupported = "HTTP/1.0 501 Not Implemented\r\n\r\n";
                 writeToClient(methodNotSupported.getBytes());
+                System.out.println("Method Not Implemented");
             }
         } catch (IOException e) {
         } catch (SAXException | ClassNotFoundException ex) {
@@ -146,24 +150,25 @@ public class RequestHandler implements Runnable {
     }
     
     private ByteArrayOutputStream ReadFromServer(){
-        ByteArrayOutputStream x=new ByteArrayOutputStream();
+        ByteArrayOutputStream response=new ByteArrayOutputStream();
         try {
             byte by1[] = new byte[BUFFERSIZE];
             int nextByte;
             nextByte=inFromServer.read(by1, 0, BUFFERSIZE);//the read method blocks until data is available;
             while(nextByte!=-1){
-                x.write(by1,0,nextByte);
+                response.write(by1,0,nextByte);
                 nextByte=inFromServer.read(by1, 0, BUFFERSIZE);
             }
         } catch (IOException ex) {
             Logger.getLogger(RequestHandler.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return x;
+        return response;
     }
 
     private URL getURL(String clientRequest){
         URL url=null;
         try {
+            clientRequest=clientRequest.replaceFirst(":[0-9]* ", " ");
             String[] lines = clientRequest.split("\r\n");
             String tockens[] = lines[0].split("(\\s)");
             url = new URL(tockens[1]);

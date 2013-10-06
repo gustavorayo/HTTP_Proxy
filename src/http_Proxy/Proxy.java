@@ -19,13 +19,12 @@ public class Proxy {
 	public static void main(String[] args) {
             	int PORT=8080;
                 int MAXCLIENT=200;
-                int cont=0;
 		ExecutorService executor=Executors.newFixedThreadPool(MAXCLIENT);
 		try {
 			ServerSocket socket=new ServerSocket(PORT);
 			while(true){
 				Socket client = socket.accept();
-				executor.execute(new RequestHandler(client,++cont));
+				executor.execute(new RequestHandler(client));
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

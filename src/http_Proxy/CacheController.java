@@ -11,8 +11,8 @@ public class CacheController {
 
     private static CacheController singleCache = null;
     Hashtable<String, byte[]> cache = new Hashtable<>();
-    String x = System.getProperty("user.dir");
-    Path cacheFilePath = FileSystems.getDefault().getPath(x, "cache.txt");
+    String dir = System.getProperty("user.dir");
+    Path cacheFilePath = FileSystems.getDefault().getPath(dir, "cache.txt");
     
     private CacheController() {
         File f = cacheFilePath.toFile();
@@ -48,6 +48,7 @@ public class CacheController {
                 cache = (Hashtable<String, byte[]>) obj;
             }
             ois.close();
+            System.out.println("Returned form Cache:"+url);
             return cache.get(url);
     }
 
@@ -74,10 +75,13 @@ public class CacheController {
             cache.put(key, value);
             oos.writeObject(cache);
             oos.close();
+            System.out.println("File Added:"+key);
     }
     
     //Update the value in the file of the given key(first parameter) with the second parameter
     public synchronized void update(String key, byte[] value) throws IOException, ClassNotFoundException{          
+            
+            
             //load hashtable from file
             File f = cacheFilePath.toFile();
             FileInputStream fis = new FileInputStream(f);
@@ -96,6 +100,7 @@ public class CacheController {
             cache.put(key, value);
             oos.writeObject(cache);
             oos.close();
+            System.out.println("File Updated:"+key);
     }
 
 }
